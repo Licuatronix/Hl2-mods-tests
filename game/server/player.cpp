@@ -1763,24 +1763,6 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 
 	speed = GetAbsVelocity().Length2D();
 
-	if (GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
-	{
-		speed = 0;
-		playerAnim = PLAYER_IDLE;
-	}
-
-	if ( playerAnim == PLAYER_ATTACK1 )
-	{
-		if ( speed > 0 )
-		{
-			playerAnim = PLAYER_WALK;
-		}
-		else
-		{
-			playerAnim = PLAYER_IDLE;
-		}
-	}
-
 	Activity idealActivity = ACT_WALK;// TEMP!!!!!
 
 	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
@@ -1838,7 +1820,7 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 
 
-	if (idealActivity == ACT_RANGE_ATTACK1)
+	if (idealActivity == ACT_RANGE_ATTACK1 || idealActivity == ACT_MELEE_ATTACK1)
 	{
 		if ( GetFlags() & FL_DUCKING )	// crouching
 		{
@@ -1869,18 +1851,32 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 	else if (idealActivity == ACT_IDLE)
 	{
-		if ( GetFlags() & FL_DUCKING )
+		if ( GetFlags() & FL_DUCKING )	// crouching
 		{
-			animDesired = LookupSequence( "crouch_idle" );
+			Q_strncpy( szAnim, "crouch_aim_" ,sizeof(szAnim));
 		}
 		else
 		{
-			animDesired = LookupSequence( "look_idle" );
+			Q_strncpy( szAnim, "ref_aim_" ,sizeof(szAnim));
 		}
+		Q_strncat( szAnim, m_szAnimExtension ,sizeof(szAnim), COPY_ALL_CHARACTERS );
+		animDesired = LookupSequence( szAnim );
 		if (animDesired == -1)
 			animDesired = 0;
 
-		SetActivity( ACT_IDLE );
+		if ( GetSequence() != animDesired || !SequenceLoops() )
+		{
+			SetCycle( 0 );
+		}
+
+		// Tracker 24588:  In single player when firing own weapon this causes eye and punchangle to jitter
+		//if (!SequenceLoops())
+		//{
+		//	IncrementInterpolationFrame();
+		//}
+
+		SetActivity( idealActivity );
+		ResetSequence( animDesired );
 	}
 	else if ( idealActivity == ACT_WALK )
 	{
