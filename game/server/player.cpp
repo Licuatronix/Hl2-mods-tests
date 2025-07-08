@@ -1820,7 +1820,7 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 
 
-	if (idealActivity == ACT_RANGE_ATTACK1 || idealActivity == ACT_MELEE_ATTACK1)
+	if (idealActivity == ACT_RANGE_ATTACK1)
 	{
 		if ( GetFlags() & FL_DUCKING )	// crouching
 		{
