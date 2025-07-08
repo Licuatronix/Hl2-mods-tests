@@ -1756,6 +1756,11 @@ void CBasePlayer::Event_Dying( const CTakeDamageInfo& info )
 // Set the activity based on an event or current state
 void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 {
+	if ( playerAnim == PLAYER_ATTACK1 )
+	{
+		DoAnimationEvent( PLAYERANIMEVENT_FIRE_GUN );
+	}
+
 	int animDesired;
 	char szAnim[64];
 
@@ -1767,6 +1772,18 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	{
 		speed = 0;
 		playerAnim = PLAYER_IDLE;
+	}
+
+	if ( playerAnim == PLAYER_ATTACK1 )
+	{
+		if ( speed > 0 )
+		{
+			playerAnim = PLAYER_WALK;
+		}
+		else
+		{
+			playerAnim = PLAYER_IDLE;
+		}
 	}
 
 	Activity idealActivity = ACT_WALK;// TEMP!!!!!
@@ -1784,18 +1801,18 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	{
 		if ( m_lifeState == LIFE_ALIVE )
 		{
-			idealActivity = GetDeathActivity();
+			idealActivity = ACT_DIERAGDOLL;
 		}
 	}
 	else if (playerAnim == PLAYER_ATTACK1)
 	{
-		if ( m_Activity == ACT_HOVER	|| 
-			 m_Activity == ACT_SWIM		||
-			 m_Activity == ACT_HOP		||
-			 m_Activity == ACT_LEAP		||
-			 m_Activity == ACT_DIESIMPLE )
+		if ( GetActivity() == ACT_HOVER	|| 
+			GetActivity() == ACT_SWIM		||
+			GetActivity() == ACT_HOP		||
+			GetActivity() == ACT_LEAP		||
+			GetActivity() == ACT_DIESIMPLE )
 		{
-			idealActivity = m_Activity;
+			idealActivity = GetActivity();
 		}
 		else
 		{
@@ -1804,9 +1821,9 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK)
 	{
-		if ( !( GetFlags() & FL_ONGROUND ) && (m_Activity == ACT_HOP || m_Activity == ACT_LEAP) )	// Still jumping
+		if ( !( GetFlags() & FL_ONGROUND ) && (GetActivity() == ACT_HOP || GetActivity() == ACT_LEAP) )	// Still jumping
 		{
-			idealActivity = m_Activity;
+			idealActivity = GetActivity();
 		}
 		else if ( GetWaterLevel() > 1 )
 		{
@@ -1815,13 +1832,17 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 			else
 				idealActivity = ACT_SWIM;
 		}
-		else
+		else if ( speed > 0 )
 		{
 			idealActivity = ACT_WALK;
 		}
+		else
+		{
+			idealActivity = ACT_IDLE;
+		}
 	}
 
-	
+
 	if (idealActivity == ACT_RANGE_ATTACK1)
 	{
 		if ( GetFlags() & FL_DUCKING )	// crouching
@@ -1851,42 +1872,49 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 		SetActivity( idealActivity );
 		ResetSequence( animDesired );
 	}
-	else if (idealActivity == ACT_WALK)
+	else if (idealActivity == ACT_IDLE)
 	{
-		if (GetActivity() != ACT_RANGE_ATTACK1 || IsActivityFinished())
+		if ( GetFlags() & FL_DUCKING )
 		{
-			if ( GetFlags() & FL_DUCKING )	// crouching
-			{
-				Q_strncpy( szAnim, "crouch_aim_" ,sizeof(szAnim));
-			}
-			else
-			{
-				Q_strncpy( szAnim, "ref_aim_" ,sizeof(szAnim));
-			}
-			Q_strncat( szAnim, m_szAnimExtension,sizeof(szAnim), COPY_ALL_CHARACTERS );
-			animDesired = LookupSequence( szAnim );
-			if (animDesired == -1)
-				animDesired = 0;
-			SetActivity( ACT_WALK );
+			animDesired = LookupSequence( "crouch_idle" );
 		}
 		else
 		{
-			animDesired = GetSequence();
+			animDesired = LookupSequence( "look_idle" );
 		}
+		if (animDesired == -1)
+			animDesired = 0;
+
+		SetActivity( ACT_IDLE );
+	}
+	else if ( idealActivity == ACT_WALK )
+	{
+		if ( GetFlags() & FL_DUCKING )
+		{
+			animDesired = SelectWeightedSequence( ACT_CROUCH );
+			SetActivity( ACT_CROUCH );
+		}
+		else
+		{
+			animDesired = SelectWeightedSequence( ACT_RUN );
+			SetActivity( ACT_RUN );
+		}
+		
 	}
 	else
 	{
 		if ( GetActivity() == idealActivity)
 			return;
-	
+
 		SetActivity( idealActivity );
 
-		animDesired = SelectWeightedSequence( m_Activity );
+		animDesired = SelectWeightedSequence( GetActivity() );
 
 		// Already using the desired animation?
 		if (GetSequence() == animDesired)
 			return;
 
+		m_iRealSequence = animDesired;
 		ResetSequence( animDesired );
 		SetCycle( 0 );
 		return;
@@ -1895,6 +1923,8 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	// Already using the desired animation?
 	if (GetSequence() == animDesired)
 		return;
+
+	m_iRealSequence = animDesired;
 
 	//Msg( "Set animation to %d\n", animDesired );
 	// Reset to first frame of desired animation
