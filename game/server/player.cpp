@@ -1756,11 +1756,6 @@ void CBasePlayer::Event_Dying( const CTakeDamageInfo& info )
 // Set the activity based on an event or current state
 void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 {
-	if ( playerAnim == PLAYER_ATTACK1 )
-	{
-		DoAnimationEvent( PLAYERANIMEVENT_FIRE_GUN );
-	}
-
 	int animDesired;
 	char szAnim[64];
 
@@ -1914,7 +1909,6 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 		if (GetSequence() == animDesired)
 			return;
 
-		m_iRealSequence = animDesired;
 		ResetSequence( animDesired );
 		SetCycle( 0 );
 		return;
@@ -1923,8 +1917,6 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	// Already using the desired animation?
 	if (GetSequence() == animDesired)
 		return;
-
-	m_iRealSequence = animDesired;
 
 	//Msg( "Set animation to %d\n", animDesired );
 	// Reset to first frame of desired animation
