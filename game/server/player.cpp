@@ -1809,7 +1809,7 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 			else
 				idealActivity = ACT_SWIM;
 		}
-		else if ( speed > 0 )
+		else if ( speed > 0 && idealActivity != ACT_RANGE_ATTACK1)
 		{
 			idealActivity = ACT_WALK;
 		}
@@ -1820,7 +1820,7 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 
 
-	if (idealActivity == ACT_RANGE_ATTACK1)
+	if ( idealActivity == ACT_RANGE_ATTACK1 || idealActivity == ACT_MELEE_ATTACK1 )
 	{
 		if ( GetFlags() & FL_DUCKING )	// crouching
 		{
@@ -1887,8 +1887,16 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 		}
 		else
 		{
-			animDesired = SelectWeightedSequence( ACT_RUN );
-			SetActivity( ACT_RUN );
+			if ( speed > 300)
+			{
+				animDesired = SelectWeightedSequence( ACT_RUN );
+			        SetActivity( ACT_RUN );
+			}
+			else if ( speed <= 200 && speed >= 10)
+			{
+				animDesired = SelectWeightedSequence( ACT_WALK );
+		        	SetActivity( ACT_WALK );
+			}
 		}
 		
 	}
